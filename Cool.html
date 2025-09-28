@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>BLOCK IT, HAX — Add Bookmarklet</title>
+  <style>
+    :root{
+      --bg:#0b0b0f;
+      --card:#111215;
+      --accent:#0bc2cf;
+      --muted:#9aa0a6;
+      --glass: rgba(255,255,255,0.03);
+    }
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;}
+    body{
+      display:flex;align-items:center;justify-content:center;
+      background:linear-gradient(180deg,#05060a, #071022);
+      color:#e6eef2;
+      padding:24px;
+    }
+    .card{
+      width:100%;max-width:720px;padding:28px;border-radius:12px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      box-shadow: 0 8px 30px rgba(2,6,23,0.6);
+      border:1px solid rgba(255,255,255,0.03);
+      text-align:center;
+    }
+    h1{margin:6px 0 18px;font-size:26px;letter-spacing:1px}
+    .bookmark-link{
+      display:inline-block;
+      font-weight:700;
+      padding:18px 28px;border-radius:10px;
+      background:var(--card); color:var(--accent);
+      text-decoration:none; font-size:18px;
+      border:1px solid rgba(11,194,207,0.12);
+      user-select:all; /* allow selection for long-press copy on some devices */
+    }
+    p.muted{color:var(--muted);margin:12px 0 18px;}
+    .controls{display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap}
+    button{padding:10px 14px;border-radius:8px;border:0;background:var(--glass);color:#d9eef2;cursor:pointer}
+    .hint{font-size:13px;color:#b9c6cc;margin-top:12px}
+    .notice{background:rgba(255,255,255,0.02);padding:10px;border-radius:8px;margin-top:16px;color:var(--muted);font-size:13px}
+    @media (max-width:520px){
+      .bookmark-link{padding:14px 18px;font-size:16px}
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>BLOCK IT, HAX</h1>
+
+    <!-- Visible link users can tap & hold to add to bookmarks -->
+    <!-- Note: the href is set by JavaScript below -->
+    <a id="bmLink" class="bookmark-link" href="#">BLOCK IT, HAX</a>
+
+    <p class="muted">Tap &amp; hold the link above, then choose <strong>"Add Bookmark"</strong> (iOS) or <strong>"Add to bookmarks"</strong> (Android/desktop). You can also copy the code below.</p>
+
+    <div class="controls">
+      <button id="copyBtn">Copy bookmarklet code</button>
+      <button id="showCodeBtn">Show bookmarklet code</button>
+    </div>
+
+    <pre id="codeBlock" style="display:none;margin-top:14px;padding:12px;border-radius:8px;background:#071018;color:#bfeef5;overflow:auto;font-size:13px"></pre>
+
+    <div class="notice" id="deviceHint"></div>
+  </div>
+
+  <script>
+    // ---------- IMPORTANT ----------
+    // Replace the value of `bookmarkletBody` with your bookmarklet's JS function body.
+    // Keep it a self-contained (IIFE) body. Example example: "alert('hi');"
+    // ------------------------------
+    const bookmarkletBody = `
+      // EXAMPLE: safe demo behavior — replace this with your own JS.
+      // Do not paste code that cheats, hacks, or breaks terms of service.
+      (function(){
+        // Demo: show a console banner and a toast alert
+        console.log("%c BLOCK IT, HAX bookmarklet ran", "color: #0bc2cf; font-size:14px");
+        try{
+          alert("BLOCK IT, HAX — demo bookmarklet executed.");
+        }catch(e){}
+      })();
+    `.trim();
+
+    // Build final href: `javascript:(function(){...})();void(0);`
+    function makeBookmarkletHref(body){
+      // Clean up and minify lightly
+      let b = body.trim();
+      // If user pasted a whole IIFE, don't wrap again; otherwise wrap
+      if(!/^\\(function\\(|^\\(async function\\(|^\\(\\(function/.test(b)){
+        b = `(function(){${b}})();`;
+      }
+      // encodeURIComponent would make some browsers block; use direct data but escape line breaks
+      const singleLine = b.replace(/\\n/g, "; ");
+      return "javascript:" + singleLine + "void(0);";
+    }
+
+    const bmLink = document.getElementById("bmLink");
+    const copyBtn = document.getElementById("copyBtn");
+    const showCodeBtn = document.getElementById("showCodeBtn");
+    const codeBlock = document.getElementById("codeBlock");
+    const deviceHint = document.getElementById("deviceHint");
+
+    const href = makeBookmarkletHref(bookmarkletBody);
+    bmLink.setAttribute("href", href);
+    bmLink.setAttribute("title", "Tap & hold to add this bookmarklet");
+
+    // Copy raw JS body (not the javascript: href) to clipboard
+    copyBtn.addEventListener("click", async ()=>{
+      try{
+        await navigator.clipboard.writeText(bookmarkletBody);
+        copyBtn.textContent = "Copied!";
+        setTimeout(()=>copyBtn.textContent = "Copy bookmarklet code", 1600);
+      }catch(e){
+        copyBtn.textContent = "Copy failed — select manually";
+        setTimeout(()=>copyBtn.textContent = "Copy bookmarklet code", 1600);
+      }
+    });
+
+    showCodeBtn.addEventListener("click", ()=>{
+      if(codeBlock.style.display === "none"){
+        codeBlock.textContent = bookmarkletBody;
+        codeBlock.style.display = "block";
+        showCodeBtn.textContent = "Hide code";
+      }else{
+        codeBlock.style.display = "none";
+        showCodeBtn.textContent = "Show bookmarklet code";
+      }
+    });
+
+    // Device-specific hint to users (short instructions)
+    function getMobileOS(){
+      const ua = navigator.userAgent || navigator.vendor || window.opera;
+      if(/android/i.test(ua)) return "Android";
+      if(/iPad|iPhone|iPod/.test(ua) && !window.MSStream) return "iOS";
+      return "Desktop";
+    }
+    const os = getMobileOS();
+    if(os === "iOS"){
+      deviceHint.innerHTML = "iOS tips: tap & hold the link, choose <strong>Copy</strong> or <strong>Add Bookmark</strong>. If using Safari: tap Share → Add Bookmark → Edit the URL field and replace it with the full bookmarklet code (paste from 'Copy bookmarklet code').";
+    }else if(os === "Android"){
+      deviceHint.innerHTML = "Android tips: tap & hold the link and choose <strong>Add bookmark</strong>. In some browsers you can edit the saved bookmark's URL and paste the full code.";
+    }else{
+      deviceHint.innerHTML = "Desktop tips: drag the link to your bookmarks bar, or right-click → Bookmark this link. You can also copy the code and create a new bookmark manually with the code as the URL.";
+    }
+
+    // UX: make long press select the link text to help some platforms
+    bmLink.addEventListener("touchstart", (e)=>{
+      // select the link text to hint mobile OS
+      const range = document.createRange();
+      range.selectNodeContents(bmLink);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+      // Clear selection after short delay so it doesn't stay selected
+      setTimeout(()=>{ try{ window.getSelection().removeAllRanges(); }catch(_){} }, 1500);
+    });
+  </script>
+</body>
+</html>
