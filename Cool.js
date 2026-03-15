@@ -46,7 +46,7 @@
                 color: #666;
             }
         </style>
-        <h1>ZZSPLO1TS v1.4</h1>
+        <h1>ZZSPLO1TS v1.194844</h1>
         <div class="info">
             <p>This is the place to get school game cheats, bookmarklets, unblockers and more!</p>
             <p>This has many proxy's too! Remember, don't get caught on here or it will get blocked</p>
